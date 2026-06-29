@@ -19,7 +19,7 @@ const corsOptions: cors.CorsOptions = {
     if (!origin) return callback(null, true);
     if (whitelist.includes(origin)) return callback(null, true);
     if (allowedDomains.some((d) => origin.includes(d))) return callback(null, true);
-    callback(new Error("Not allowed by CORS"));
+    callback(null, false);
   },
   credentials: true,
 };

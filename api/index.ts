@@ -1,5 +1,6 @@
 import { createApp } from '../src/app'
 import mongoose from 'mongoose'
+import type { Request, Response } from 'express'
 
 let cached = (global as any).__mongoose
 if (!cached) {
@@ -22,6 +23,12 @@ async function connectDB() {
 
 const { app } = createApp()
 
-connectDB().catch((err) => console.error('MongoDB connection error:', err))
-
-export default app
+export default async function handler(req: Request, res: Response) {
+  try {
+    await connectDB()
+  } catch (error) {
+    res.status(500).json({ message: 'Database connection failed', error: (error as Error).message })
+    return
+  }
+  app(req, res)
+}

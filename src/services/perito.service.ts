@@ -74,12 +74,22 @@ function sanitizeDates(input: Record<string, unknown>): Record<string, unknown> 
 export async function create(
   input: CreatePeritoInput
 ): Promise<CreatePeritoResult> {
-  const existing = await Perito.findOne({ ruc: input.ruc });
-  if (existing) {
+  const active = await Perito.findOne({ ruc: input.ruc, isActive: true });
+  if (active) {
     throw new CustomError("A perito with this RUC already exists", 409);
   }
 
-  const perito = await Perito.create(sanitizeDates(input as unknown as Record<string, unknown>));
+  let perito: unknown;
+
+  const softDeleted = await Perito.findOne({ ruc: input.ruc, isActive: false });
+  if (softDeleted) {
+    softDeleted.set(sanitizeDates(input as unknown as Record<string, unknown>));
+    softDeleted.isActive = true;
+    await softDeleted.save();
+    perito = softDeleted;
+  } else {
+    perito = await Perito.create(sanitizeDates(input as unknown as Record<string, unknown>));
+  }
 
   let notificationSent = false;
   let passwordGenerated = false;
