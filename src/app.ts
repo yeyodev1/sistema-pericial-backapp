@@ -12,13 +12,14 @@ const whitelist = [
   "http://localhost:8101",
 ];
 
+const allowedDomains = [".bakano.ec", ".vercel.app", "sistema-pericial-backapp"];
+
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    if (!origin || whitelist.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
+    if (!origin) return callback(null, true);
+    if (whitelist.includes(origin)) return callback(null, true);
+    if (allowedDomains.some((d) => origin.includes(d))) return callback(null, true);
+    callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
 };
