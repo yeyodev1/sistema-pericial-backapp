@@ -12,7 +12,7 @@ const whitelist = [
   "http://localhost:8101",
 ];
 
-const allowedDomains = [".bakano.ec", ".vercel.app", "sistema-pericial-backapp"];
+const allowedDomains = [".bakano.ec", ".vercel.app", ".netlify.app", "sistema-pericial-backapp"];
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
