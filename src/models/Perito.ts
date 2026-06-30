@@ -6,6 +6,15 @@ export interface ICuentaBancaria {
   numeroCuenta: string;
 }
 
+export interface IPeritoEspecialidad {
+  areaProfesion: string;
+  especialidad: string;
+  ciudad?: string;
+  fechaSolicitud?: Date;
+  fechaVencimiento?: Date;
+  observaciones?: string;
+}
+
 export interface IFirmaElectronica {
   data: Buffer;
   iv: string;
@@ -15,13 +24,16 @@ export interface IFirmaElectronica {
 }
 
 export interface IPerito extends Document {
+  codigoRegistro?: string;
   nombres: string;
   apellidos: string;
   ruc: string;
   direccion?: string;
   telefono?: string;
   email?: string;
+  notificationEmails: string[];
   cuentasBancarias: ICuentaBancaria[];
+  especialidades: IPeritoEspecialidad[];
   firmaElectronica?: IFirmaElectronica;
   fechaVigenciaCalificacion?: Date;
   fechaVencimientoFirma?: Date;
@@ -41,6 +53,18 @@ const CuentaBancariaSchema = new Schema<ICuentaBancaria>(
   { _id: false }
 );
 
+const PeritoEspecialidadSchema = new Schema<IPeritoEspecialidad>(
+  {
+    areaProfesion: { type: String, required: true, trim: true },
+    especialidad: { type: String, required: true, trim: true },
+    ciudad: { type: String, trim: true },
+    fechaSolicitud: { type: Date },
+    fechaVencimiento: { type: Date },
+    observaciones: { type: String, trim: true },
+  },
+  { _id: false }
+);
+
 const FirmaElectronicaSchema = new Schema<IFirmaElectronica>(
   {
     data: { type: Buffer, required: true },
@@ -54,6 +78,7 @@ const FirmaElectronicaSchema = new Schema<IFirmaElectronica>(
 
 const PeritoSchema = new Schema<IPerito>(
   {
+    codigoRegistro: { type: String, required: true, trim: true, unique: true, sparse: true },
     nombres: { type: String, required: true, trim: true },
     apellidos: { type: String, required: true, trim: true },
     ruc: {
@@ -66,7 +91,16 @@ const PeritoSchema = new Schema<IPerito>(
     direccion: { type: String, trim: true },
     telefono: { type: String, trim: true },
     email: { type: String, trim: true, lowercase: true },
+    notificationEmails: {
+      type: [String],
+      default: [],
+      set: (value: string[]) =>
+        Array.isArray(value)
+          ? value.map((email) => String(email).trim().toLowerCase()).filter(Boolean)
+          : [],
+    },
     cuentasBancarias: { type: [CuentaBancariaSchema], default: [] },
+    especialidades: { type: [PeritoEspecialidadSchema], default: [] },
     firmaElectronica: { type: FirmaElectronicaSchema, select: false },
     fechaVigenciaCalificacion: { type: Date },
     fechaVencimientoFirma: { type: Date },
@@ -75,6 +109,7 @@ const PeritoSchema = new Schema<IPerito>(
   { timestamps: true }
 );
 
-PeritoSchema.index({ nombres: "text", apellidos: "text", ruc: "text" });
+PeritoSchema.index({ codigoRegistro: 1 });
+PeritoSchema.index({ nombres: "text", apellidos: "text", ruc: "text", codigoRegistro: "text" });
 
 export default mongoose.model<IPerito>("Perito", PeritoSchema);

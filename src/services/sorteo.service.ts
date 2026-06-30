@@ -14,12 +14,12 @@ export async function findAll(
   }
 
   return Sorteo.find(filter)
-    .populate("peritoId", "nombres apellidos ruc")
+    .populate("peritoId", "codigoRegistro nombres apellidos ruc")
     .sort({ fechaAsignacion: -1 });
 }
 
 export async function findById(id: string): Promise<ISorteo | null> {
-  return Sorteo.findById(id).populate("peritoId", "nombres apellidos ruc");
+  return Sorteo.findById(id).populate("peritoId", "codigoRegistro nombres apellidos ruc");
 }
 
 export async function create(

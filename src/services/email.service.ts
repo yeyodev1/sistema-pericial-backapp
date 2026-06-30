@@ -38,6 +38,10 @@ export class EmailService {
     });
   }
 
+  async sendMany(payloads: EmailPayload[]): Promise<void> {
+    await Promise.all(payloads.map((payload) => this.send(payload)));
+  }
+
   async sendLoginNotification(email: string, userName: string): Promise<void> {
     const now = new Date().toLocaleString("es-EC", {
       timeZone: "America/Guayaquil",

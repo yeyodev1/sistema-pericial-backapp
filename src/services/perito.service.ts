@@ -27,16 +27,26 @@ export async function findByIdWithFirma(id: string) {
 }
 
 export interface CreatePeritoInput {
+  codigoRegistro: string;
   nombres: string;
   apellidos: string;
   ruc: string;
   direccion?: string;
   telefono?: string;
   email?: string;
+  notificationEmails?: string[];
   cuentasBancarias?: {
     banco: string;
     tipoCuenta: "AHORROS" | "CORRIENTE";
     numeroCuenta: string;
+  }[];
+  especialidades?: {
+    areaProfesion: string;
+    especialidad: string;
+    ciudad?: string;
+    fechaSolicitud?: Date;
+    fechaVencimiento?: Date;
+    observaciones?: string;
   }[];
   fechaVigenciaCalificacion?: Date;
   fechaVencimientoFirma?: Date;
@@ -68,7 +78,40 @@ function sanitizeDates(input: Record<string, unknown>): Record<string, unknown> 
       delete clean[key];
     }
   }
+  if (Array.isArray(clean.especialidades)) {
+    clean.especialidades = clean.especialidades.map((item) => {
+      if (!item || typeof item !== "object") return item;
+      const especialidad = { ...(item as Record<string, unknown>) };
+      for (const key of ["fechaSolicitud", "fechaVencimiento"]) {
+        if (especialidad[key] === "" || especialidad[key] === undefined) {
+          delete especialidad[key];
+        }
+      }
+      return especialidad;
+    });
+  }
+  if (Array.isArray(clean.notificationEmails)) {
+    clean.notificationEmails = clean.notificationEmails
+      .map((email) => String(email).trim().toLowerCase())
+      .filter(Boolean);
+  }
   return clean;
+}
+
+function uniqueEmails(...groups: Array<string | undefined | null | (string | undefined | null)[]>) {
+  const set = new Set<string>();
+  for (const group of groups) {
+    if (Array.isArray(group)) {
+      for (const item of group) {
+        const email = String(item || "").trim().toLowerCase();
+        if (email) set.add(email);
+      }
+    } else {
+      const email = String(group || "").trim().toLowerCase();
+      if (email) set.add(email);
+    }
+  }
+  return [...set];
 }
 
 export async function create(
@@ -96,14 +139,16 @@ export async function create(
   let userCreated = false;
   const finalPassword = input.password || generatePassword();
 
-  if (input.sendNotification && input.email) {
+   const recipients = uniqueEmails(input.email, input.notificationEmails || []);
+
+   if (input.sendNotification && recipients.length > 0) {
     passwordGenerated = !input.password;
 
     try {
       const userName = `${input.nombres} ${input.apellidos}`;
 
-      const existingUser = await User.findOne({ email: input.email });
-      if (!existingUser) {
+      const existingUser = input.email ? await User.findOne({ email: input.email }) : null;
+      if (!existingUser && input.email) {
         await User.create({
           email: input.email,
           password: finalPassword,
@@ -113,23 +158,27 @@ export async function create(
         userCreated = true;
       }
 
-      await emailService.send({
-        to: input.email,
-        subject: "Acceso al Sistema Pericial",
-        body:
-          `Sistema Pericial - Credenciales de Acceso\n` +
-          `==========================================\n\n` +
-          `Estimado/a ${userName},\n\n` +
-          `Has sido registrado/a como perito en el Sistema Pericial.\n\n` +
-          `Tus credenciales de acceso son:\n\n` +
-          `  Usuario: ${input.email}\n` +
-          `  Contraseña: ${finalPassword}\n\n` +
-          `Puedes ingresar al sistema a través del siguiente enlace:\n` +
-          `  https://yeyo.dev/login\n\n` +
-          `Por seguridad, te recomendamos cambiar tu contraseña al iniciar sesión.\n\n` +
-          `Saludos cordiales,\n` +
-          `Equipo del Sistema Pericial`,
-      });
+      await Promise.all(
+        recipients.map((recipient) =>
+          emailService.send({
+            to: recipient,
+            subject: "Acceso al Sistema Pericial",
+            body:
+              `Sistema Pericial - Credenciales de Acceso\n` +
+              `==========================================\n\n` +
+              `Estimado/a ${userName},\n\n` +
+              `Has sido registrado/a como perito en el Sistema Pericial.\n\n` +
+              `Tus credenciales de acceso son:\n\n` +
+              `  Usuario: ${input.email || recipient}\n` +
+              `  Contraseña: ${finalPassword}\n\n` +
+              `Puedes ingresar al sistema a través del siguiente enlace:\n` +
+              `  https://yeyo.dev/login\n\n` +
+              `Por seguridad, te recomendamos cambiar tu contraseña al iniciar sesión.\n\n` +
+              `Saludos cordiales,\n` +
+              `Equipo del Sistema Pericial`,
+          })
+        )
+      );
 
       notificationSent = true;
     } catch (err) {
@@ -215,6 +264,13 @@ export async function getVigenciaAlerts(daysThreshold = 30) {
       },
       {
         fechaVencimientoFirma: { $lte: thresholdDate },
+      },
+      {
+        especialidades: {
+          $elemMatch: {
+            fechaVencimiento: { $lte: thresholdDate },
+          },
+        },
       },
     ],
   }).sort({ fechaVencimientoFirma: 1, fechaVigenciaCalificacion: 1 });
