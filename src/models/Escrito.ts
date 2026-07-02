@@ -2,6 +2,8 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IEscrito extends Document {
   sorteoId: mongoose.Types.ObjectId;
+  numero?: number;
+  descripcion?: string;
   tipo: "DEMANDA" | "CONTESTACION" | "PRUEBA" | "ALEGATO" | "SENTENCIA" | "OTRO";
   fechaPresentacion: Date;
   fechaNotificacion?: Date;
@@ -14,6 +16,8 @@ export interface IEscrito extends Document {
 const EscritoSchema = new Schema<IEscrito>(
   {
     sorteoId: { type: Schema.Types.ObjectId, ref: "Sorteo", required: true },
+    numero: { type: Number },
+    descripcion: { type: String, trim: true, default: "" },
     tipo: {
       type: String,
       enum: ["DEMANDA", "CONTESTACION", "PRUEBA", "ALEGATO", "SENTENCIA", "OTRO"],

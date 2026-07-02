@@ -63,6 +63,11 @@ export interface ISorteoContacto {
 export interface ISorteoImpugnacion {
   estado?: string;
   fecha?: Date;
+  fechaNotificacion?: Date;
+  fechaVencimiento?: Date;
+  fechaRevision?: Date;
+  fechaEntrega?: Date;
+  fechaConfirmacion?: Date;
   observacion?: string;
 }
 
@@ -176,6 +181,11 @@ const sorteoImpugnacionSchema = new Schema<ISorteoImpugnacion>(
   {
     estado: { type: String, trim: true },
     fecha: { type: Date },
+    fechaNotificacion: { type: Date },
+    fechaVencimiento: { type: Date },
+    fechaRevision: { type: Date },
+    fechaEntrega: { type: Date },
+    fechaConfirmacion: { type: Date },
     observacion: { type: String, trim: true },
   },
   { _id: false }

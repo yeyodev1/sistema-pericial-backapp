@@ -6,6 +6,10 @@ export interface IBitacoraCobro extends Document {
   fecha: Date;
   tipoGestion: "VISITA" | "LLAMADA" | "CORREO" | "NOTIFICACION_JUDICIAL";
   resultado: "PENDIENTE" | "CONTACTO_EXITOSO" | "PROMESA_PAGO" | "PAGO_PARCIAL" | "PAGO_TOTAL" | "SIN_RESULTADO";
+  nombreContacto?: string;
+  direccion?: string;
+  telefono?: string;
+  correo?: string;
   proximaAccion: string;
   proximaFecha?: Date;
   observaciones: string;
@@ -17,6 +21,10 @@ const BitacoraCobroSchema = new Schema<IBitacoraCobro>(
     sorteoId: { type: Schema.Types.ObjectId, ref: "Sorteo", required: true },
     cobradorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     fecha: { type: Date, required: true, default: Date.now },
+    nombreContacto: { type: String, trim: true },
+    direccion: { type: String, trim: true },
+    telefono: { type: String, trim: true },
+    correo: { type: String, trim: true, lowercase: true },
     tipoGestion: {
       type: String,
       enum: ["VISITA", "LLAMADA", "CORREO", "NOTIFICACION_JUDICIAL"],
